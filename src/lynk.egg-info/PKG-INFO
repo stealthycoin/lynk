@@ -1,0 +1,21 @@
+Metadata-Version: 1.1
+Name: lynk
+Version: 0.0.1
+Summary: Client for using AWS DynamoDB as a distributed lock.
+Home-page: https://github.com/stealthycoin/lynk
+Author: John Carlyle
+Author-email: UNKNOWN
+License: Apache License 2.0
+Description: Lynk
+        ====
+        
+Platform: UNKNOWN
+Classifier: Development Status :: 2 - Pre-Alpha
+Classifier: Intended Audience :: Developers
+Classifier: Natural Language :: English
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 2
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.6
