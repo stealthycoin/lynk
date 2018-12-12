@@ -9,6 +9,7 @@ here = os.path.abspath(os.path.dirname(__file__))
 src_dir = os.path.join(here, "src")
 sys.path.insert(0, src_dir)
 
+
 def read(*parts):
     return codecs.open(os.path.join(here, *parts), 'r').read()
 
@@ -37,6 +38,7 @@ setup_options = dict(
     author='John Carlyle',
     url='https://github.com/stealthycoin/lynk',
     install_requires=requires,
+    scripts=['bin/lynk'],
     package_dir={"": "src"},
     packages=find_packages(where="src", exclude=['tests*']),
     license="Apache License 2.0",

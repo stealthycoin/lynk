@@ -22,13 +22,14 @@ class DynamoDBControl(object):
         if session is None:
             session = boto3.Session()
         self._client = session.client('dynamodb')
+        self._tags = session.client('resourcegroupstaggingapi')
 
     def create(self):
         """Create DynamoDB table for use as a lynk backend.
 
         Blocks until the table is created.
         """
-        self._client.create_table(
+        response = self._client.create_table(
             TableName=self._table_name,
             AttributeDefinitions=[
                 {
@@ -50,6 +51,17 @@ class DynamoDBControl(object):
         waiter = self._client.get_waiter('table_exists')
         waiter.wait(TableName=self._table_name)
 
+        table_arn = response['TableDescription']['TableArn']
+        self._client.tag_resource(
+            ResourceArn=table_arn,
+            Tags=[
+                {
+                    'Key': 'lynk',
+                    'Value': 'lock-table',
+                }
+            ]
+        )
+
     def destroy(self):
         """Destroy DymamoDB table.
 
@@ -68,6 +80,19 @@ class DynamoDBControl(object):
             return True
         except self._client.exceptions.ResourceNotFoundException:
             return False
+
+    def find(self):
+        response = self._tags.get_resources(
+            TagFilters=[
+                {
+                    'Key': 'lynk',
+                    'Values': ['lock-table'],
+                }
+            ]
+        )
+        arns = [r['ResourceARN'] for r in response['ResourceTagMappingList']]
+        names = [a[a.rfind('/')+1:] for a in arns]
+        return names
 
 
 class DynamoDBBackendBridgeFactory(object):

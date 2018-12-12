@@ -2,3 +2,5 @@
 .chalice/venv/
 htmlcov/
 .coverage
+docs/build/
+*.egg-info/

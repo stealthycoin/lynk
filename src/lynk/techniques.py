@@ -28,25 +28,25 @@ class VersionLeaseTechinque(BaseTechnique):
     into a backing store that has consistent read/write with the following
     properties::
 
-      name:          string
-      versionNumber  string
-      leaseDuration  int
-      hostIdentifier string
+      name:           string
+      versionNumber:  string
+      leaseDuration:  int
+      hostIdentifier: string
 
     * Name - In a distributed system multiple hosts/entities sometimes need to
-        operate on the same resource. To do so they acquire a lock on the
-        resource by name. This name is chosen by the client that is acquiring
-        the lock and only has meaning within their system.
+      operate on the same resource. To do so they acquire a lock on the
+      resource by name. This name is chosen by the client that is acquiring
+      the lock and only has meaning within their system.
     * versionNumber - The version number is our fencing token. When we create a
-        lock entry it is given a uuid4 as it's versionNumber. Any
-        writes/deletes to this entry in the future require that the caller know
-        the matching versionNumber in order for the change to be enacted.
+      lock entry it is given a uuid4 as it's versionNumber. Any
+      writes/deletes to this entry in the future require that the caller know
+      the matching versionNumber in order for the change to be enacted.
     * leaseDuration - This is the number of seconds that the lock is good for,
-        at a minimum. Once an entry is written the owner of the lock is
-        responsible for refreshing or releasing it in < leaseDuration seconds.
-        If it does not do that the lock can be stolen by another client.
+      at a minimum. Once an entry is written the owner of the lock is
+      responsible for refreshing or releasing it in < leaseDuration seconds.
+      If it does not do that the lock can be stolen by another client.
     * hostIdentifier - This is a convenience for debugging. This simply gives a
-        way for a debugging programmer to see which host currently owns a lock.
+      way for a debugging programmer to see which host currently owns a lock.
 
 
     The three elemental operations that make up the algorithm are acquire,
@@ -72,6 +72,7 @@ class VersionLeaseTechinque(BaseTechnique):
     acquire call will be repeated after sleeping for leaseDuration seconds.
     There are three cases, that can be distinquished between since the
     versionNumber was recorded:
+
     * The lock entry is gone. This means the lock was released. The acquire can
       go ahead without issue.
     * The lock entry has the same versionNumber. This means the owner of the
