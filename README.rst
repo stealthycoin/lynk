@@ -19,8 +19,8 @@ Lynk
 .. intro-begin
 
 Lynk is a Distributed Lock Manager (DLM) that uses DynamoDB to track the state
-of it's locks. Lynk is a cooporative locking scheme where each client assumes
-that all others in the system are obeying a set of  rules in order to assure
+of its locks. Lynk is a cooperative locking scheme where each client assumes
+that all others in the system are obeying a set of rules in order to assure
 the integrity of the locks.
 
 .. intro-end
@@ -152,11 +152,11 @@ minimal but complete example of using two threads to contend for the same lock.
 
 
 First, we can ignore the ``configure_logging`` function, it just sets up
-logging show which thread is logging.
+logging to show which thread is emitting the logs. This makes it easier to track
+the flow of our program..
 
-Looking at the ``main`` function, the first real thing that happens is the same
-as the first example, we create a lock factory that can create locks bound to
-our table ``lynk-quickstart``.
+Looking at the ``main`` function, the first real thing that happens  we create a
+lock factory that can create locks bound to our table ``lynk-quickstart``.
 
 .. code-block:: python
 
@@ -173,7 +173,7 @@ function.
 
 
 The last thing the ``main`` function does is start both threads, then join on
-them, which will wait for them to terminate before exiting.
+them, which will wait for them to complete before exiting.
 
 .. code-block:: python
 
@@ -193,7 +193,7 @@ lock object.
 
 This means each thread will have its own unique lock object linked logically to
 the name ``my lock``. The threads share a factory, which is bound to the table
-``lynk-quickstart``. Simply create the lock does not interact with the
+``lynk-quickstart``. Simply creating the lock does not interact with the
 DynamoDB Tables in any way.
 
 Next each thread tries to acquire the lock.
@@ -203,9 +203,10 @@ Next each thread tries to acquire the lock.
    lock.acquire()
 
 This simple statement is what makes the call to write an entry in our DynamoDB
-Table that this lock name is in use. Once this call succeeds we are safe to
-operate on whatever resource this lock was responsiblef or protecting. In this
-example case we simply sleep for 10 seconds and then release the lock.
+Table. Once an entry is written, this indicates that the lock is in-use and
+we are safe to operate on whatever resource this lock was responsible for
+protecting. In this example case we simply sleep for 10 seconds and then
+release the lock.
 
 .. code-block:: python
 
@@ -214,14 +215,15 @@ example case we simply sleep for 10 seconds and then release the lock.
 
 The ``time.sleep(10)`` call would be replaced with real work in an actual
 application. Once the protected resource is done being operated on, and has
-been safely written and is ready for another actor to use it we release the
+been safely written and is ready for another agent to use, we release the
 lock. The :meth:`lynk.lock.Lock.release` call deletes the entry from the table
 freeing the lock name up to be used by another agent.
 
 
-The output of our little sample application is shown below. You can see how
-one thread gets the lock, does its work, and the lock is released the other
-thread can acquire it and begin working::
+The output of our little sample application is shown below. You can see one
+thread gets the lock (in this case ``Thread-2``) and does it work while the
+other thread waits for it to be released. Once released, the other thread
+repeats the same process::
 
    Thread-1 - Starting
    Thread-2 - Starting
@@ -229,6 +231,11 @@ thread can acquire it and begin working::
    Thread-2 - Lock released
    Thread-1 - Lock acquired
    Thread-1 - Lock released
+
+
+More complex but similar examples can be seen in the
+`examples <https://github.com/stealthycoin/lynk/tree/master/examples>`_
+directory of the source repo.
 
 
 Lock entry details
