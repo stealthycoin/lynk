@@ -121,8 +121,9 @@ class TestControlPlane(object):
 
 class TestDynamoDBBackendBridgeFactory(object):
     def test_can_create(self):
+        mock_session = mock.Mock()
         factory = DynamoDBBackendBridgeFactory()
-        bridge, backend = factory.create('table_name')
+        bridge, backend = factory.create('table_name', session=mock_session)
         assert isinstance(bridge, DynamoDBVersionLeaseBridge)
         assert isinstance(backend, DynamoDBBackend)
 
