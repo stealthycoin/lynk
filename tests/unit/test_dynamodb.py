@@ -73,6 +73,10 @@ class TestControlPlane(object):
         mock_waiter = mock.Mock()
         mock_client = mock.Mock()
         mock_client.get_waiter.return_value = mock_waiter
+        mock_client.create_table.return_value = {
+            'TableDescription': {'TableArn': 'arn'},
+        }
+
         session.client.return_value = mock_client
         control = ddb_control_factory(session=session)
 
