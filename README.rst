@@ -275,6 +275,31 @@ More examples can be found in the
 `examples <https://github.com/stealthycoin/lynk/tree/master/examples>`_
 directory in the source repo.
 
+
+Context manager
+---------------
+
+In the above example we manually call ``acquire()`` and ``release()``. This depends on no
+exceptions ocurring, and would generally be safer in a ``try: finally:`` block. For
+convenience the :class:`lynk.lock.Lock` object can be called and used as a context manager.
+The following code:
+
+.. code-block:: python
+
+   lock.acquire()
+   time.sleep(10)
+   lock.release()
+
+Can be re-written more safely, and conveinently, as:
+
+.. code-block:: python
+
+   with lock():
+       time.sleep(10)
+
+This ensures the releasing in the lock in the case of an unexpected exception.
+
+
 Teardown
 --------
 
