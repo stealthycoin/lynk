@@ -1,7 +1,7 @@
 Lynk
 ====
 
-|build status| |doc status|
+|build status| |doc status| |version| |license|
 
 .. |build status| image:: https://travis-ci.com/stealthycoin/lynk.svg?branch=master
     :target: https://travis-ci.com/stealthycoin/lynk
@@ -9,6 +9,12 @@ Lynk
 .. |doc status| image:: https://readthedocs.org/projects/lynk/badge/?version=latest
     :target: https://lynk.readthedocs.io/en/latest/
     :alt: Doc Status
+.. |version| image:: http://img.shields.io/pypi/v/lynk.svg?style=flat
+    :target: https://pypi.org/project/lynk/
+    :alt: Version
+.. |license| image:: https://img.shields.io/badge/license-Apache%202-blue.svg
+    :target: https://github.com/stealthycoin/lynk/blob/master/LICENSE
+    :alt: License
 
 .. intro-begin
 
