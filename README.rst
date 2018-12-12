@@ -1,4 +1,6 @@
 .. image:: https://readthedocs.org/projects/lynk/badge/?version=latest
+.. image:: https://travis-ci.com/stealthycoin/lynk.svg?branch=master
+    :target: https://travis-ci.com/stealthycoin/lynk
 
 Lynk
 ====
