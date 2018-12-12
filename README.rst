@@ -7,6 +7,8 @@ Lynk
     :target: https://travis-ci.com/stealthycoin/lynk
     :alt: Build Status
 .. |doc status| image:: https://readthedocs.org/projects/lynk/badge/?version=latest
+    :target: https://lynk.readthedocs.io/en/latest/
+    :alt: Doc Status
 
 .. intro-begin
 
