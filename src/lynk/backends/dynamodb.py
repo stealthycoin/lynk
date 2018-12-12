@@ -91,7 +91,7 @@ class DynamoDBControl(object):
             ]
         )
         arns = [r['ResourceARN'] for r in response['ResourceTagMappingList']]
-        names = [a[a.rfind('/')+1:] for a in arns]
+        names = [a[a.rfind('/') + 1:] for a in arns]
         return names
 
 
