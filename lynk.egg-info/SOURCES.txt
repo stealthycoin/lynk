@@ -1,6 +1,0 @@
-README.rst
-lynk.egg-info/PKG-INFO
-lynk.egg-info/SOURCES.txt
-lynk.egg-info/dependency_links.txt
-lynk.egg-info/requires.txt
-lynk.egg-info/top_level.txt

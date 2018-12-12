@@ -1,6 +1,6 @@
 from lynk.lock import LockFactory
 
-__version__ = '0.0.1'
+__version__ = '0.1.0'
 
 
 def get_lock_factory(table_name, host_identifier=None,
