@@ -1,24 +1,13 @@
+import uuid
 import time
 import logging
 import threading
 
-import boto3
-
-from lynk import DynamoDBLynk
+import lynk
+from lynk.backends.dynamodb import DynamoDBControl
 
 LOG = logging.getLogger(__file__)
-
-
-def ensure_table_deleted(table_name):
-    client = boto3.client('dynamodb')
-    while True:
-        try:
-            client.delete_table(TableName=table_name)
-            break
-        except client.exceptions.ResourceInUseException:
-            time.sleep(10)
-    waiter = client.get_waiter('table_not_exists')
-    waiter.wait(TableName=table_name)
+THREADS = 3
 
 
 class SleepyThread(threading.Thread):
@@ -35,11 +24,11 @@ class SleepyThread(threading.Thread):
         # This works because we are using an auto refreshing lock, which spins
         # up a thread to automatically refreshes the lock before the lease
         # expires. Once the lock is released the refresher thread is destroyed.
-        lock = self._factory.create_auto_refreshing_lock('my lock')
+        lock = self._factory.create_lock('my lock', auto_refresh=True)
         with lock(lease_duration=5):
             LOG.debug('Acquired lock')
             time.sleep(10)
-            LOG.debug('Done sleeping')
+            LOG.debug('Releasing lock')
         LOG.debug('Ending')
 
 
@@ -47,7 +36,7 @@ def do_work_with_locks(factory):
     # Create a lock factory that produces locks tied to our backend.
     # We pass a reference of this into each thread so the threads can
     # create their own lock object.
-    threads = [SleepyThread(factory) for _ in range(2)]
+    threads = [SleepyThread(factory) for _ in range(THREADS)]
 
     for t in threads:
         t.start()
@@ -57,14 +46,21 @@ def do_work_with_locks(factory):
 
 
 def main():
-    table_name = 'example-lynk-lock-table-auto-refresh'
-    factory = DynamoDBLynk(table_name)
+    table_name = 'example-lynk-auto-refresh-table-%s' % str(uuid.uuid4())
+    factory = lynk.get_lock_factory(table_name)
+    # Create a DynamoDBControl object to give us access to the control plane
+    # of dynamodb for creation/deletion of tables. For this example we create
+    # a table if needed, and destroy it after running the example.
+    control = DynamoDBControl(table_name)
 
     try:
-        factory.create_table()
+        if not control.exists():
+            LOG.debug('Creating table %s', table_name)
+            control.create()
         do_work_with_locks(factory)
     finally:
-        ensure_table_deleted(table_name)
+        LOG.debug('Destroying table %s', table_name)
+        control.destroy()
 
 
 def configure_logging():

@@ -4,6 +4,7 @@ from threading import Thread
 import mock
 
 from lynk.refresh import LockRefresher
+from lynk.refresh import LockRefresherFactory
 
 
 class TestLockRefresher(object):
@@ -31,3 +32,11 @@ class TestLockRefresher(object):
         time.sleep(0.1)
         refresher.stop()
         assert refresh_fn.called
+
+
+class TestLockRefresherFactory(object):
+    def test_can_create(self):
+        mock_lock = mock.Mock()
+        factory = LockRefresherFactory()
+        refresher = factory.create_lock_refresher(mock_lock, 5)
+        assert isinstance(refresher, LockRefresher)

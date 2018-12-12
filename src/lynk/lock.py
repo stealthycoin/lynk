@@ -1,30 +1,32 @@
 import socket
 from contextlib import contextmanager
 
-from lynk.locker import Locker
+from lynk.techniques import VersionLeaseTechinque
 from lynk.refresh import LockRefresherFactory
+from lynk.backends.dynamodb import DynamoDBBackendBridgeFactory
 
 
 class Lock(object):
     """A class that provides an interface with which to use a lock.
 
     The Lock object is a wrapper that provides a convenient interface, the
-    actual work is done in the underlying Locker object. This object should
-    not be initialized directly, but created from a
+    actual work is done in the underlying Techinque and Backend objects. This
+    object should not be initialized directly, but created from a
     :class:`lynk.lock.LockFactory`.
     """
-    def __init__(self, locker, refresher_factory=None):
+    _REFRESH_PERIOD_RATIO = 3.0 / 4.0
+
+    def __init__(self, name, technique, refresher_factory=None):
         """Initialize a new Lock.
 
         :type locker: :class:`lynk.lock.Locker`
         :param locker: The provided Locker is responsible for running the
             actual locking algorithms for creation releasing and stealing.
         """
-        self._locker = locker
-
-    @property
-    def name(self):
-        return self._locker.lock_name
+        self._name = name
+        self._technique = technique
+        self._refresher_factory = refresher_factory
+        self._refresher = None
 
     def acquire(self, lease_duration=20, max_wait_seconds=300):
         """Try to aquire this lock.
@@ -44,20 +46,21 @@ class Lock(object):
             before giving up and raising a
             :class:`lynk.exceptions.LockNotGrantedError`.
         """
-        self._locker.acquire_lock(
+        self._technique.acquire(
+            self._name,
             lease_duration,
             max_wait_seconds=max_wait_seconds,
         )
+        self._start_refresher(lease_duration)
 
     def release(self):
-        """Release this lock.
-        """
-        self._locker.delete_lock()
+        """Release this lock."""
+        self._stop_refresher()
+        self._technique.release(self._name)
 
     def refresh(self):
-        """Refresh this lock.
-        """
-        self._locker.refresh_lock()
+        """Refresh this lock."""
+        self._technique.refresh(self._name)
 
     def __call__(self, lease_duration=20, timeout_seconds=300):
         return self._context_manager(lease_duration, timeout_seconds)
@@ -73,61 +76,9 @@ class Lock(object):
         finally:
             self.release()
 
-
-class AutoRefreshingLock(Lock):
-    _REFRESH_PERIOD_RATIO = 2.0 / 3.0
-
-    def __init__(self, locker, refresher_factory):
-        """Initialize a new Lock.
-
-        :type locker: :class:`lynk.lock.Locker`
-        :param locker: The provided Locker is responsible for running the
-            actual locking algorithms for creation releasing and stealing.
-
-        :type refresher_factory: :class:`lynk.refresh.LockRefresherFactory`
-        :param refresher_factory: The refresher is in charge of keeping the
-            lock owned by this lock object. If this factory is set it will be
-            have its
-            :meth:`lynk.refresh.LockRefresherFactory.create_lock_refresher`
-            called When an acquire is called. This produces a
-            :class:`lynk.refresh.LockRefresher` which is used to maintain
-            ownership of the lock in the backing store. It does this by
-            spinning up a separate thread which periodically calls the refresh
-            function of this lock. The period will be chosen based on the
-            lease duration that the acquire was called with.
-        """
-        super(AutoRefreshingLock, self).__init__(locker)
-        self._refresher_factory = refresher_factory
-        self._refresher = None
-
-    def acquire(self, lease_duration=20, max_wait_seconds=300):
-        """Try to aquire this lock.
-
-        This method is the same as the parent lock class's acquire except that
-        it creates and starts a :class:`lynk.refresh.LockRefresher` after
-        acquiring the lock.
-
-        :type lease_duration: int
-        :param lease_duration: The number of seconds to hold the lock for
-            initially. The lock can be refreshed in smaller periods than the
-            lease_duration to hold the lock longer.
-
-        :type max_wait_seconds: float
-        :param max_wait_seconds: Number of seconds to wait to aquire the lock
-            before giving up and raising a
-            :class:`lynk.exceptions.LockNotGrantedError`.
-        """
-        super(AutoRefreshingLock, self).acquire(
-            lease_duration, max_wait_seconds)
-        self._start_refresher(lease_duration)
-
-    def release(self):
-        """Release this lock.
-        """
-        self._stop_refresher()
-        super(AutoRefreshingLock, self).release()
-
     def _start_refresher(self, lease_duration):
+        if not self._refresher_factory:
+            return
         self._refresher = self._refresher_factory.create_lock_refresher(
             self,
             lease_duration * self._REFRESH_PERIOD_RATIO,
@@ -142,29 +93,61 @@ class AutoRefreshingLock(Lock):
 
 
 class LockFactory(object):
-    def __init__(self, backend, host_identifier=None):
+    """Class for constructing locks."""
+    def __init__(self, table_name, host_identifier=None,
+                 backend_bridge_factory=None):
         """Initialize a new LockFactory.
+
+        :type table_name: str
+        :param table_name: Name of the table in the backend.
+
+        :type host_identifier: str
+        :param host_identifier: A unique identifier for a host. A host is just
+            an unused field in the database. It is for debugging and nothing
+            more so any value can be used that has meaning to the developer.
+            By default hostname is used.
+
+        :type backend_bridge_factory: Anything with a create method or None.
+        :param backend_bridge_factory: A factory that creates our backend and
+            its associated bridge class to be injected into our lock. Usually
+            these need to be created by a shared factory class because they
+            have shared dependencies. If None is provided the default is a
+            :class:`lynk.backends.dynamodb.DynamoDBBackendBridgeFactory` which
+            will create locks bound to a DynamoDB Table.
         """
-        self._backend = backend
+        self._table_name = table_name
         if host_identifier is None:
             host_identifier = socket.gethostname()
         self._host_identifier = host_identifier
+        if backend_bridge_factory is None:
+            backend_bridge_factory = DynamoDBBackendBridgeFactory()
+        self._backend_bridge_factory = backend_bridge_factory
 
-    def create_lock(self, lock_name):
-        locker = self._create_locker(lock_name)
-        lock = Lock(locker)
-        return lock
+    def create_lock(self, lock_name, auto_refresh=True):
+        """Create a new lock object.
 
-    def create_auto_refreshing_lock(self, lock_name):
-        locker = self._create_locker(lock_name)
-        refresher_factory = LockRefresherFactory()
-        lock = AutoRefreshingLock(locker, refresher_factory)
-        return lock
+        :type lock_name: str
+        :param lock_name: Logical name of the lock in the backend.
 
-    def _create_locker(self, lock_name):
-        locker = Locker(
-            lock_name,
-            self._backend,
+        :type auto_refresh: bool
+        :param auto_refresh: If ``True`` the created lock will automatically
+            refresh itself. If ``False`` it will not. The default value is
+            ``True``.
+        """
+        bridge, backend = self._backend_bridge_factory.create(
+            self._table_name,
+        )
+        technique = VersionLeaseTechinque(
+            bridge,
+            backend,
             host_identifier=self._host_identifier,
         )
-        return locker
+        refresher_factory = None
+        if auto_refresh:
+            refresher_factory = LockRefresherFactory()
+        lock = Lock(
+            lock_name,
+            technique,
+            refresher_factory=refresher_factory,
+        )
+        return lock

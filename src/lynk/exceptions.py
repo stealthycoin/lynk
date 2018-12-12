@@ -20,3 +20,7 @@ class LockLostError(Exception):
     cooperation this means another client stole the lock since it was not
     refreshed before the lease duration expired.
     """
+
+
+class NoSuchLockError(Exception):
+    """Raised when an operation is performed on a non-existant lock."""
