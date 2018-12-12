@@ -1,9 +1,12 @@
-.. image:: https://readthedocs.org/projects/lynk/badge/?version=latest
-.. image:: https://travis-ci.com/stealthycoin/lynk.svg?branch=master
-    :target: https://travis-ci.com/stealthycoin/lynk
-
 Lynk
 ====
+
+|build status| |doc status|
+
+.. |build status| image:: https://travis-ci.com/stealthycoin/lynk.svg?branch=master
+    :target: https://travis-ci.com/stealthycoin/lynk
+    :alt: Build Status
+.. |doc status| image:: https://readthedocs.org/projects/lynk/badge/?version=latest
 
 .. intro-begin
 
