@@ -1,3 +1,5 @@
+.. image:: https://readthedocs.org/projects/lynk/badge/?version=latest
+
 Lynk
 ====
 
@@ -9,6 +11,12 @@ that all others in the system are obeying a set of  rules in order to assure
 the integrity of the locks.
 
 .. intro-end
+
+
+Documentation
+=============
+
+The docs are hosted at `readthedocs <https://lynk.readthedocs.io/en/latest/>`_
 
 
 Quickstart
