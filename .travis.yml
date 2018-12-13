@@ -3,9 +3,13 @@ python:
   - "3.6"
 
 install:
+  - pip install codecov
   - pip install -r requirements-dev.txt
   - pip install -e .
 
 script:
   - make check
   - make test
+
+after_success:
+  - codecov
