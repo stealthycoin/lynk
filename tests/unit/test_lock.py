@@ -6,6 +6,7 @@ from lynk.lock import LockFactory
 from lynk.techniques import BaseTechnique
 from lynk.refresh import LockRefresherFactory
 from lynk.refresh import LockRefresher
+from lynk.exceptions import LockNotGrantedError
 
 
 @pytest.fixture
@@ -52,6 +53,20 @@ class TestLock(object):
             pass
         tech.acquire.assert_called_with('lock name', 20, max_wait_seconds=300)
         tech.release.assert_called_with('lock name')
+
+    def test_lock_not_granted_does_escape_context_manager(self, create_lock):
+        # The context manager swallows errors, its important that the
+        # LockNotGrantedError escapes this otherwise it could be silenced and
+        # the with block would exceute and operate on a resource protected by
+        # the lock, even though the lock acquisition failed.
+        # Also the release should not be called, since the acquire failed.
+        lock, tech, _ = create_lock()
+        tech.acquire.side_effect = LockNotGrantedError()
+        with pytest.raises(LockNotGrantedError):
+            with lock():
+                pass
+        tech.acquire.assert_called_with('lock name', 20, max_wait_seconds=300)
+        tech.release.assert_not_called()
 
     def test_acquire_does_create_and_start_refresher(self, create_lock):
         lock, tech, refresher_factory = create_lock(refresher=True)

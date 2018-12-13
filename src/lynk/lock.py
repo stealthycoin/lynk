@@ -67,11 +67,11 @@ class Lock(object):
 
     @contextmanager
     def _context_manager(self, lease_duration, max_wait_seconds):
+        self.acquire(
+            lease_duration=lease_duration,
+            max_wait_seconds=max_wait_seconds,
+        )
         try:
-            self.acquire(
-                lease_duration=lease_duration,
-                max_wait_seconds=max_wait_seconds,
-            )
             yield
         finally:
             self.release()
