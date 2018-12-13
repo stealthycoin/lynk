@@ -118,6 +118,33 @@ class TestControlPlane(object):
         mock_client.get_waiter.assert_called_with('table_not_exists')
         mock_waiter.wait.assert_called_with(TableName='table_name')
 
+    def test_can_find_tables(self, ddb_control_factory):
+        session = mock.Mock(spec=Session)
+        mock_client = mock.Mock()
+        mock_client.get_resources.return_value = {
+            'ResourceTagMappingList': [
+                {
+                    'ResourceARN': 'arn:.../table-1-name',
+                },
+                {
+                    'ResourceARN': 'arn:.../table-44-name',
+                },
+            ]
+        }
+        session.client.return_value = mock_client
+        control = ddb_control_factory(session=session)
+
+        tables = control.find()
+        assert tables == ['table-1-name', 'table-44-name']
+        mock_client.get_resources.assert_called_once_with(
+            TagFilters=[
+                {
+                    'Key': 'lynk',
+                    'Values': ['lock-table'],
+                },
+            ]
+        )
+
 
 class TestDynamoDBBackendBridgeFactory(object):
     def test_can_create(self):
