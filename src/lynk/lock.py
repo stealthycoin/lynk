@@ -1,9 +1,4 @@
-import socket
 from contextlib import contextmanager
-
-from lynk.techniques import VersionLeaseTechinque
-from lynk.refresh import LockRefresherFactory
-from lynk.backends.dynamodb import DynamoDBBackendBridgeFactory
 
 
 class Lock(object):
@@ -12,7 +7,7 @@ class Lock(object):
     The Lock object is a wrapper that provides a convenient interface, the
     actual work is done in the underlying Techinque and Backend objects. This
     object should not be initialized directly, but created from a
-    :class:`lynk.lock.LockFactory`.
+    :class:`lynk.session.Session`.
     """
     _REFRESH_PERIOD_RATIO = 3.0 / 4.0
 
@@ -90,68 +85,3 @@ class Lock(object):
             return
         self._refresher.stop()
         self._refresher = None
-
-
-class LockFactory(object):
-    """Class for creating locks.
-
-    A ``LockFactory`` represents the logical binding beteween an agent that
-    can interact with locks, and a backend table where the locks are stored.
-    This relationship is defined by the ``table_name`` and ``host_identifier``
-    parameters outlined below.
-
-    :type table_name: str
-    :param table_name: Name of the table in the backend.
-
-    :type host_identifier: str
-    :param host_identifier: A unique identifier for a host. A host is just
-        an unused field in the database. It is for debugging and nothing
-        more so any value can be used that has meaning to the developer.
-        By default hostname is used.
-
-    :type backend_bridge_factory: Anything with a create method or None.
-    :param backend_bridge_factory: A factory that creates our backend and
-        its associated bridge class to be injected into our lock. Usually
-        these need to be created by a shared factory class because they
-        have shared dependencies. If None is provided the default is a
-        :class:`lynk.backends.dynamodb.DynamoDBBackendBridgeFactory` which
-        will create locks bound to a DynamoDB Table.
-    """
-    def __init__(self, table_name, host_identifier=None,
-                 backend_bridge_factory=None):
-        self._table_name = table_name
-        if host_identifier is None:
-            host_identifier = socket.gethostname()
-        self._host_identifier = host_identifier
-        if backend_bridge_factory is None:
-            backend_bridge_factory = DynamoDBBackendBridgeFactory()
-        self._backend_bridge_factory = backend_bridge_factory
-
-    def create_lock(self, lock_name, auto_refresh=True):
-        """Create a new lock object.
-
-        :type lock_name: str
-        :param lock_name: Logical name of the lock in the backend.
-
-        :type auto_refresh: bool
-        :param auto_refresh: If ``True`` the created lock will automatically
-            refresh itself. If ``False`` it will not. The default value is
-            ``True``.
-        """
-        bridge, backend = self._backend_bridge_factory.create(
-            self._table_name,
-        )
-        technique = VersionLeaseTechinque(
-            bridge,
-            backend,
-            host_identifier=self._host_identifier,
-        )
-        refresher_factory = None
-        if auto_refresh:
-            refresher_factory = LockRefresherFactory()
-        lock = Lock(
-            lock_name,
-            technique,
-            refresher_factory=refresher_factory,
-        )
-        return lock

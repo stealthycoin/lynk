@@ -2,7 +2,6 @@ import pytest
 import mock
 
 from lynk.lock import Lock
-from lynk.lock import LockFactory
 from lynk.techniques import BaseTechnique
 from lynk.refresh import LockRefresherFactory
 from lynk.refresh import LockRefresher
@@ -88,36 +87,3 @@ class TestLock(object):
         lock.release()
 
         mock_refresher.stop.assert_called_once()
-
-
-class TestLockFactory(object):
-    def test_can_create_lock_factory(self):
-        factory = LockFactory('table_name')
-        assert isinstance(factory, LockFactory)
-
-    def test_can_create_lock(self):
-        identifier = 'foobar'
-        bridge_factory = mock.Mock()
-        bridge_factory.create.return_value = (mock.Mock(), mock.Mock())
-        factory = LockFactory(
-            'table_name',
-            host_identifier=identifier,
-            backend_bridge_factory=bridge_factory,
-        )
-        lock = factory.create_lock('foo')
-        assert isinstance(lock, Lock)
-
-    def test_can_create_lock_without_refresher(self):
-        identifier = 'foobar'
-        bridge_factory = mock.Mock()
-        bridge_factory.create.return_value = (mock.Mock(), mock.Mock())
-        factory = LockFactory(
-            'table_name',
-            host_identifier=identifier,
-            backend_bridge_factory=bridge_factory,
-        )
-        lock = factory.create_lock('foo', auto_refresh=False)
-        assert isinstance(lock, Lock)
-        # No other easy way to check this without a real backend. So for a
-        # simple unit test we will reach into the private varaible to check.
-        assert lock._refresher_factory is None

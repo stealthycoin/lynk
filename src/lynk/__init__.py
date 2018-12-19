@@ -1,14 +1,14 @@
-from lynk.lock import LockFactory
+from lynk.session import Session
 
-__version__ = '0.1.0'
+__version__ = '0.2.0'
 
 
-def get_lock_factory(table_name, host_identifier=None,
-                     backend_bridge_factory=None):
-    """Create a new :class:`lynk.lock.LockFactory` with default settings.
+def get_session(table_name, host_identifier=None,
+                backend_bridge_factory=None):
+    """Create a new :class:`lynk.session.Session` with default settings.
 
     This is a convenience function for getting a default configured
-    LockFactory.
+    Session.
 
     :type table_name: str
     :param table_name: Name of the table in the backend.
@@ -27,7 +27,7 @@ def get_lock_factory(table_name, host_identifier=None,
         :class:`lynk.backends.dynamodb.DynamoDBBackendBridgeFactory` which
         will create locks bound to a DynamoDB Table.
     """
-    return LockFactory(table_name, host_identifier, backend_bridge_factory)
+    return Session(table_name, host_identifier, backend_bridge_factory)
 
 
-__all__ = ['LockFactory', 'get_lock_factory']
+__all__ = ['Session', 'get_session']

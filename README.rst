@@ -84,21 +84,21 @@ Creating a lock
 Locks are shared through a DynamoDB table, in our case we will be using the
 ``lynk-quickstart`` we created earlier table. Locks are distinguished by a
 lock name, within their table. To get create a lock, we first need to create a
-:class:`lynk.lock.LockFactory` that is bound to our table. The factory can
+:class:`lynk.session.Session` that is bound to our table. The session can
 then be used to create multiple locks that will be backed by that table.
 
-The easiet way to make a :class:`lynk.lock.LockFactory` is by using the
-:func:`lynk.get_lock_factory` function. This function only takes one argument
-which is the name of the table it is bound to. Once a factory has been created
+The easiet way to make a :class:`lynk.session.Session` is by using the
+:func:`lynk.get_session` function. This function only takes one argument
+which is the name of the table it is bound to. Once a session has been created
 it can be used to create lock objects using the
-:meth:`lynk.lock.LockFactory.create_lock` method.
+:meth:`lynk.session.Session.create_lock` method.
 
 .. code-block:: python
 
    import lynk
 
-   factory = lynk.get_lock_factory('lynk-quickstart')
-   lock = factory.create_lock('my lock')
+   session = lynk.get_session('lynk-quickstart')
+   lock = session.create_lock('my lock')
 
 ``lock`` is an instance of :class:`lynk.lock.Lock` which is bound to both our
 table ``lynk-quickstart``, and the logical lock name ``my lock``. If we create
@@ -128,9 +128,9 @@ minimal but complete example of using two threads to contend for the same lock.
        LOG.addHandler(ch)
 
 
-   def thread(factory):
+   def thread(session):
        LOG.debug('Starting')
-       lock = factory.create_lock('my lock')
+       lock = session.create_lock('my lock')
        lock.acquire()
        LOG.debug('Lock acquired')
        time.sleep(10)
@@ -140,9 +140,9 @@ minimal but complete example of using two threads to contend for the same lock.
 
    def main():
        configure_logging()
-       factory = lynk.get_lock_factory('lynk-quickstart')
-       t1 = threading.Thread(target=thread, args=(factory,))
-       t2 = threading.Thread(target=thread, args=(factory,))
+       session = lynk.get_session('lynk-quickstart')
+       t1 = threading.Thread(target=thread, args=(session,))
+       t2 = threading.Thread(target=thread, args=(session,))
 
        t1.start()
        t2.start()
@@ -156,23 +156,23 @@ minimal but complete example of using two threads to contend for the same lock.
 
 First, we can ignore the ``configure_logging`` function, it just sets up
 logging to show which thread is emitting the logs. This makes it easier to track
-the flow of our program..
+the flow of our program.
 
-Looking at the ``main`` function, the first real thing that happens  we create a
-lock factory that can create locks bound to our table ``lynk-quickstart``.
+Looking at the ``main`` function, the first real thing that happens  we create
+a session that can create locks bound to our table ``lynk-quickstart``.
 
 .. code-block:: python
 
-   factory = lynk.get_lock_factory('lynk-quickstart')
+   session = lynk.get_session('lynk-quickstart')
 
-We then create two thread objects, and pass our ``factory`` object into each
+We then create two thread objects, and pass our ``session`` object into each
 as a shared variable. Once started each thread will execute the ``thread``
 function.
 
 .. code-block:: python
 
-   t1 = threading.Thread(target=thread, args=(factory,))
-   t2 = threading.Thread(target=thread, args=(factory,))
+   t1 = threading.Thread(target=thread, args=(session,))
+   t2 = threading.Thread(target=thread, args=(session,))
 
 
 The last thing the ``main`` function does is start both threads, then join on
@@ -192,10 +192,10 @@ lock object.
 
 .. code-block:: python
 
-   lock = factory.create_lock('my lock')
+   lock = session.create_lock('my lock')
 
 This means each thread will have its own unique lock object linked logically to
-the name ``my lock``. The threads share a factory, which is bound to the table
+the name ``my lock``. The threads share a session, which is bound to the table
 ``lynk-quickstart``. Simply creating the lock does not interact with the
 DynamoDB Tables in any way.
 
