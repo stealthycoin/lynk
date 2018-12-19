@@ -35,6 +35,14 @@ lynk.refresh module
     :undoc-members:
     :show-inheritance:
 
+lynk.session module
+-------------------
+
+.. automodule:: lynk.session
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 lynk.techniques module
 ----------------------
 
