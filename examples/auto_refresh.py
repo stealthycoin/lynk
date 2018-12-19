@@ -11,20 +11,20 @@ THREADS = 3
 
 
 class SleepyThread(threading.Thread):
-    def __init__(self, factory):
+    def __init__(self, session):
         super(SleepyThread, self).__init__()
-        self._factory = factory
+        self._session = session
 
     def run(self):
         LOG.debug('Starting')
-        # Create an auto-refreshing lock from our shared factory.
+        # Create an auto-refreshing lock from our shared session.
         # We explicitly set the lease duration to be shorter than the ammount
         # of time we hold the lock for. The lease duration is 5 seconds, and
         # we operate on the locked resource for 10 seconds.
         # This works because we are using an auto refreshing lock, which spins
         # up a thread to automatically refreshes the lock before the lease
         # expires. Once the lock is released the refresher thread is destroyed.
-        lock = self._factory.create_lock('my lock', auto_refresh=True)
+        lock = self._session.create_lock('my lock', auto_refresh=True)
         with lock(lease_duration=5):
             LOG.debug('Acquired lock')
             time.sleep(10)
@@ -32,11 +32,11 @@ class SleepyThread(threading.Thread):
         LOG.debug('Ending')
 
 
-def do_work_with_locks(factory):
-    # Create a lock factory that produces locks tied to our backend.
+def do_work_with_locks(session):
+    # Create a lock session that produces locks tied to our backend.
     # We pass a reference of this into each thread so the threads can
     # create their own lock object.
-    threads = [SleepyThread(factory) for _ in range(THREADS)]
+    threads = [SleepyThread(session) for _ in range(THREADS)]
 
     for t in threads:
         t.start()
@@ -47,7 +47,7 @@ def do_work_with_locks(factory):
 
 def main():
     table_name = 'example-lynk-auto-refresh-table-%s' % str(uuid.uuid4())
-    factory = lynk.get_lock_factory(table_name)
+    session = lynk.get_session(table_name)
     # Create a DynamoDBControl object to give us access to the control plane
     # of dynamodb for creation/deletion of tables. For this example we create
     # a table if needed, and destroy it after running the example.
@@ -57,7 +57,7 @@ def main():
         if not control.exists():
             LOG.debug('Creating table %s', table_name)
             control.create()
-        do_work_with_locks(factory)
+        do_work_with_locks(session)
     finally:
         LOG.debug('Destroying table %s', table_name)
         control.destroy()

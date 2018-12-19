@@ -12,15 +12,15 @@ THREADS = 20
 
 
 class SleepyThread(threading.Thread):
-    def __init__(self, factory):
+    def __init__(self, session):
         super(SleepyThread, self).__init__()
-        self._factory = factory
+        self._session = session
 
     def run(self):
         LOG.debug('Starting')
-        # Create a lock from our shared factory. Since each thread is the same
+        # Create a lock from our shared session. Since each thread is the same
         # the lock names will be the same.
-        lock = self._factory.create_lock('my lock', auto_refresh=False)
+        lock = self._session.create_lock('my lock', auto_refresh=False)
         # The with block here will block until it aquires the lock. Once
         # aquired we have a lease duration of 5 seconds. That means we have 5
         # seconds guerenteed to do our work before the lock can be stolen by
@@ -38,11 +38,11 @@ class SleepyThread(threading.Thread):
         LOG.debug('Ending')
 
 
-def do_work_with_locks(factory):
-    # Create a lock factory that produces locks tied to our backend.
-    # We pass a reference of this into each thread so the threads can
-    # create their own lock object.
-    threads = [SleepyThread(factory) for _ in range(THREADS)]
+def do_work_with_locks(session):
+    # Pass our session to each thread. Each thread can create its own lock
+    # instance from the shared session, ensuring they are backed by the same
+    # table.
+    threads = [SleepyThread(session) for _ in range(THREADS)]
 
     for t in threads:
         t.start()
@@ -52,13 +52,13 @@ def do_work_with_locks(factory):
 
 
 def main():
-    # Instantiate a default LockFactory with our table name. By default the
-    # LockFactory uses DynamoDB as a backend to store lock information. This
+    # Instantiate a default Session with our table name. By default the
+    # Session uses DynamoDB as a backend to store lock information. This
     # means our lock objects can be spread across multiple machines, as long as
     # they are using the same AWS creds, table name for the backend, and lock
     # name, they will work the same as shown here in threads.
     table_name = 'example-lynk-basic-table-%s' % str(uuid.uuid4())
-    factory = lynk.get_lock_factory(table_name)
+    session = lynk.get_session(table_name)
     # Create a DynamoDBControl object to give us access to the control plane
     # of dynamodb for creation/deletion of tables. For this example we create
     # a table if needed, and destroy it after running the example.
@@ -67,7 +67,7 @@ def main():
         if not control.exists():
             LOG.debug('Creating table %s', table_name)
             control.create()
-        do_work_with_locks(factory)
+        do_work_with_locks(session)
     finally:
         LOG.debug('Destroying table %s', table_name)
         control.destroy()
