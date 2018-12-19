@@ -1,10 +1,15 @@
 import mock
 
+import lynk
 from lynk.session import Session
 from lynk.lock import Lock
 
 
 class TestSession(object):
+    def test_can_create_session_from_lynk(self):
+        session = lynk.get_session('table_name')
+        assert isinstance(session, Session)
+
     def test_can_create_session(self):
         session = Session('table_name')
         assert isinstance(session, Session)
