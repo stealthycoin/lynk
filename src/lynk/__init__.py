@@ -1,6 +1,6 @@
 from lynk.session import Session
 
-__version__ = '0.1.0'
+__version__ = '0.2.0'
 
 
 def get_session(table_name, host_identifier=None,
