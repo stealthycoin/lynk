@@ -38,6 +38,9 @@ The docs are hosted at `readthedocs <https://lynk.readthedocs.io/en/latest/>`_
 Quickstart
 ==========
 
+The quickstart guide looks better at
+`readthedocs <https://lynk.readthedocs.io/en/latest/quickstart.html>`_
+
 .. quick-start-begin
 
 
