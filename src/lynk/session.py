@@ -1,9 +1,11 @@
+import json
 import socket
 
 from lynk.techniques import VersionLeaseTechinque
 from lynk.refresh import LockRefresherFactory
 from lynk.backends.dynamodb import DynamoDBBackendBridgeFactory
 from lynk.lock import Lock
+from lynk.exceptions import CannotDeserializeError
 
 
 class Session(object):
@@ -68,4 +70,56 @@ class Session(object):
             technique,
             refresher_factory=refresher_factory,
         )
+        return lock
+
+    def deserialize_lock(self, serialized_lock, auto_refresh=True):
+        """Create a lock object from a serialized lock.
+
+        :type serialized_lock: str
+        :param serialized_lock: The serialized lock.
+
+        :type auto_refresh: bool
+        :param auto_refresh: If ``True`` the created lock will automatically
+            refresh itself. If ``False`` it will not. The default value is
+            ``True``.
+
+        :returns: The deserialized Lock object.
+        """
+        bridge, backend = self._backend_bridge_factory.create(
+            self._table_name,
+        )
+        data = json.loads(serialized_lock)
+        version = data.get('__version')
+        if not version:
+            raise CannotDeserializeError(
+                "Serialized data does not contain a lock.")
+        if version != 'Lock.1':
+            raise CannotDeserializeError(
+                "Unsupported serialized data version. Found %s, expected "
+                "Lock.1" % version)
+        try:
+            lock_name = data['name']
+            serialized_technique = data['technique']
+        except KeyError:
+            raise CannotDeserializeError(
+                "Missing property. Needs both 'name' and 'technique' "
+                "properties."
+            )
+
+        technique = VersionLeaseTechinque.from_serialized_technique(
+            serialized_technique,
+            bridge,
+            backend,
+            host_identifier=self._host_identifier,
+
+        )
+        refresher_factory = None
+        if auto_refresh:
+            refresher_factory = LockRefresherFactory()
+        lock = Lock(
+            lock_name,
+            technique,
+            refresher_factory=refresher_factory,
+        )
+        lock.refresh()
         return lock

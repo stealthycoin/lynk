@@ -1,3 +1,5 @@
+import json
+
 import pytest
 import mock
 
@@ -26,6 +28,17 @@ def create_lock():
 
 
 class TestLock(object):
+    def test_can_serialize_lock(self, create_lock):
+        lock, tech, _ = create_lock(name='foo')
+        tech.serialize.return_value = 'SERIALIZED_TECHNIQUE'
+        serial = json.loads(lock.serialize())
+
+        assert serial == {
+            '__version': 'Lock.1',
+            'name': 'foo',
+            'technique': 'SERIALIZED_TECHNIQUE',
+        }
+
     def test_can_acquire_lock(self, create_lock):
         lock, tech, _ = create_lock()
         lock.acquire()

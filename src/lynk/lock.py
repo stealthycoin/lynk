@@ -1,3 +1,5 @@
+import json
+
 from contextlib import contextmanager
 
 
@@ -85,3 +87,22 @@ class Lock(object):
             return
         self._refresher.stop()
         self._refresher = None
+
+    def serialize(self):
+        """Serialize this lock to a UTF-8 string.
+
+        To restore the string to a lock object, construct a session object
+        that matches the one that this lock was constructed with. Call its
+        :method:`lynk.session.Session.deserialize_lock` method.
+
+        To improve its chances of making the journey to the new host with
+        ownership of the lock entry in the remote table, the Lock calls it's
+        own :meth:`lynk.lock.Lock.refresh` method.
+        """
+        properties = {
+            '__version': '%s.1' % self.__class__.__name__,
+            'name': self._name,
+            'technique': self._technique.serialize(),
+        }
+        self.refresh()
+        return json.dumps(properties)

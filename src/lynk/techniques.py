@@ -1,5 +1,7 @@
 """This module encapsulates the tecnique used to maintain locks."""
 import uuid
+import json
+import copy
 import socket
 
 from lynk.utils import TimeUtils
@@ -7,17 +9,21 @@ from lynk.exceptions import LockNotGrantedError
 from lynk.exceptions import LockAlreadyInUseError
 from lynk.exceptions import LockLostError
 from lynk.exceptions import NoSuchLockError
+from lynk.exceptions import CannotDeserializeError
 
 
 class BaseTechnique(object):
     def acquire(self, name, lease_duration, max_wait_seconds):
-        pass
+        raise NotImplementedError('acquire')
 
     def release(self, name):
-        pass
+        raise NotImplementedError('release')
 
     def refresh(self, name):
-        pass
+        raise NotImplementedError('refresh')
+
+    def serialize(self):
+        raise NotImplementedError('serialize')
 
 
 class VersionLeaseTechinque(BaseTechnique):
@@ -125,6 +131,25 @@ class VersionLeaseTechinque(BaseTechnique):
             time_utils = TimeUtils()
         self._time_utils = time_utils
         self._versions = {}
+
+    @classmethod
+    def from_serialized_technique(cls, serialized_technique, backend_bridge,
+                                  backend, host_identifier=None,
+                                  time_utils=None):
+        data = json.loads(serialized_technique)
+        print(data)
+        version = data.get('__version')
+        if not version:
+            raise CannotDeserializeError(
+                "Serialized data does not contain Technique.")
+        if version != 'VersionLeaseTechinque.1':
+            raise CannotDeserializeError(
+                "Unsupported serialized data version. Found %s, expected "
+                "VersionLeaseTechinque.1" % version)
+
+        tech = cls(backend_bridge, backend, host_identifier, time_utils)
+        tech._versions = copy.copy(data['versions'])
+        return tech
 
     def acquire(self, name, lease_duration, max_wait_seconds):
         """Acquire a lock.
@@ -296,3 +321,10 @@ class VersionLeaseTechinque(BaseTechnique):
         if name not in self._versions:
             raise NoSuchLockError()
         return self._versions[name]
+
+    def serialize(self):
+        properties = {
+            '__version': '%s.1' % self.__class__.__name__,
+            'versions': self._versions,
+        }
+        return json.dumps(properties)

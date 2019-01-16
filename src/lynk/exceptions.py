@@ -24,3 +24,9 @@ class LockLostError(Exception):
 
 class NoSuchLockError(Exception):
     """Raised when an operation is performed on a non-existant lock."""
+
+
+class CannotDeserializeError(Exception):
+    """Raised when something cannot be deserialized."""
+    def __init__(self, reason):
+        self.message = reason

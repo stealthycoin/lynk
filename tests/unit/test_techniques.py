@@ -1,3 +1,5 @@
+import json
+
 import pytest
 import mock
 
@@ -5,6 +7,7 @@ from lynk.techniques import VersionLeaseTechinque
 from lynk.exceptions import NoSuchLockError
 from lynk.exceptions import LockLostError
 from lynk.exceptions import LockNotGrantedError
+from lynk.exceptions import CannotDeserializeError
 from lynk.backends.base import BaseBackend
 from lynk.backends.dynamodb import DynamoDBVersionLeaseBridge
 
@@ -46,6 +49,50 @@ def version_lease_factory():
 
 
 class TestVersionLeaseTechnique(object):
+    def test_can_serialize_technique(self, version_lease_factory):
+        vlt, bridge, backend, _ = version_lease_factory()
+        vlt.acquire('lock name', 5, 200)
+        version = backend.put.call_args_list[0][0][0]['versionNumber']
+        serial = json.loads(vlt.serialize())
+
+        assert '__version' in serial
+        assert serial['__version'] == 'VersionLeaseTechinque.1'
+        assert 'versions' in serial
+        assert serial['versions'] == {
+            'lock name': version,
+        }
+
+    def test_can_deserialize_technique(self, version_lease_factory):
+        _, bridge, backend, _ = version_lease_factory()
+        serialized = json.dumps({
+            '__version': 'VersionLeaseTechinque.1',
+            'versions': {
+                'test-lock': 'version-identifier',
+            },
+        })
+        vlt = VersionLeaseTechinque.from_serialized_technique(
+            serialized, bridge, backend)
+        assert isinstance(vlt, VersionLeaseTechinque)
+        vlt.refresh('test-lock')
+        bridge.we_own_lock.assert_called_with('version-identifier')
+
+    def test_does_raise_on_invalid_lock(self, version_lease_factory):
+        _, bridge, backend, _ = version_lease_factory()
+        serialized = json.dumps({})
+        with pytest.raises(CannotDeserializeError):
+            VersionLeaseTechinque.from_serialized_technique(
+                serialized, bridge, backend)
+
+    def test_does_raise_on_wrong_serialized_version(
+            self, version_lease_factory):
+        _, bridge, backend, _ = version_lease_factory()
+        serialized = json.dumps({
+            '__version': 'VersionLeaseTechinque.2',
+        })
+        with pytest.raises(CannotDeserializeError):
+            VersionLeaseTechinque.from_serialized_technique(
+                serialized, bridge, backend)
+
     def test_can_acquire_new_lock(self, version_lease_factory):
         vlt, bridge, backend, _ = version_lease_factory()
         vlt.acquire('lock name', 5, 200)
