@@ -99,10 +99,11 @@ class Lock(object):
         ownership of the lock entry in the remote table, the Lock calls it's
         own :meth:`lynk.lock.Lock.refresh` method.
         """
+        self._stop_refresher()
+        self.refresh()
         properties = {
             '__version': '%s.1' % self.__class__.__name__,
             'name': self._name,
             'technique': self._technique.serialize(),
         }
-        self.refresh()
         return json.dumps(properties)

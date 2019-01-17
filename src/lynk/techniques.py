@@ -137,7 +137,6 @@ class VersionLeaseTechinque(BaseTechnique):
                                   backend, host_identifier=None,
                                   time_utils=None):
         data = json.loads(serialized_technique)
-        print(data)
         version = data.get('__version')
         if not version:
             raise CannotDeserializeError(
@@ -327,4 +326,5 @@ class VersionLeaseTechinque(BaseTechnique):
             '__version': '%s.1' % self.__class__.__name__,
             'versions': self._versions,
         }
-        return json.dumps(properties)
+        serialized = json.dumps(properties)
+        return serialized
