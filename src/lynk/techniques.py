@@ -149,7 +149,7 @@ class VersionLeaseTechinque(BaseTechnique):
                 lease_duration,
                 version,
             )
-            self._version_number = version
+            self._versions[name] = version
         except LockAlreadyInUseError as prior_lock:
             self._try_steal_lock(
                 name,
@@ -219,7 +219,7 @@ class VersionLeaseTechinque(BaseTechnique):
                     existing_version_number,
                 ),
             )
-            self._version_number = version
+            self._versions[name] = version
         except self._backend_bridge.ConditionFailedError:
             self._raise_lock_in_use(name)
 

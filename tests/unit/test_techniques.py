@@ -45,7 +45,7 @@ def version_lease_factory():
     return wrapped
 
 
-class TestLocker(object):
+class TestVersionLeaseTechnique(object):
     def test_can_acquire_new_lock(self, version_lease_factory):
         vlt, bridge, backend, _ = version_lease_factory()
         vlt.acquire('lock name', 5, 200)
@@ -72,14 +72,16 @@ class TestLocker(object):
         vlt, bridge, backend, _ = version_lease_factory()
         vlt.acquire('lock name', 5, 200)
         vlt.refresh('lock name')
+        version = backend.put.call_args_list[0][0][0]['versionNumber']
         backend.update.assert_called_with(
             {'lockKey': 'lock name'},
             condition=mock.ANY,
             updates={'versionNumber': mock.ANY},
         )
+        bridge.we_own_lock.assert_called_with(version)
 
     def test_does_try_to_steal_lock_repeatedly(self, version_lease_factory):
-        # This is a fairly complex tests that makes a lot of assertions on all
+        # This is a fairly complex test that makes a lot of assertions on all
         # the assertions we can check.
         vlt, bridge, backend, time = version_lease_factory(host='host_ident')
 
