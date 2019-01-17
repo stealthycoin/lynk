@@ -19,6 +19,16 @@ Getting Started
 
    quickstart
 
+Topics
+------
+
+.. toctree::
+   :maxdepth: 2
+   :glob:
+
+   topics/index
+
+
 Indices and tables
 ==================
 

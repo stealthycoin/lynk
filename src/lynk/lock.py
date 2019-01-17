@@ -93,7 +93,7 @@ class Lock(object):
 
         To restore the string to a lock object, construct a session object
         that matches the one that this lock was constructed with. Call its
-        :method:`lynk.session.Session.deserialize_lock` method.
+        :meth:`lynk.session.Session.deserialize_lock` method.
 
         To improve its chances of making the journey to the new host with
         ownership of the lock entry in the remote table, the Lock calls it's

@@ -47,7 +47,7 @@ operating on the protected resource. Otherwise it will raise the
 ``LockAlreadyInUseError`` to indicate that the lock was stolen between
 serialization and deserialization.
 
-..code-block:: python
+.. code-block:: python
 
    import lynk
    from lynk.exceptions import LockAlreadyInUseError
