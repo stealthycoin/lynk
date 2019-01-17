@@ -1,5 +1,7 @@
 TESTS=tests/unit tests/functional
 
+.PHONY: htmlcov
+
 test:
 	py.test --cov lynk \
 	        --cov-report term-missing \
