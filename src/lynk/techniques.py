@@ -308,6 +308,7 @@ class VersionLeaseTechinque(BaseTechnique):
             self._backend.update(
                 {'lockKey': name},
                 updates={
+                    'hostIdentifier': self._host_identifier,
                     'versionNumber': new_version,
                 },
                 condition=self._backend_bridge.we_own_lock(old_version),

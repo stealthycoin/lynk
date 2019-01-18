@@ -116,14 +116,17 @@ class TestVersionLeaseTechnique(object):
         )
 
     def test_can_refresh_lock(self, version_lease_factory):
-        vlt, bridge, backend, _ = version_lease_factory()
+        vlt, bridge, backend, _ = version_lease_factory(host='host-ident')
         vlt.acquire('lock name', 5, 200)
         vlt.refresh('lock name')
         version = backend.put.call_args_list[0][0][0]['versionNumber']
         backend.update.assert_called_with(
             {'lockKey': 'lock name'},
             condition=mock.ANY,
-            updates={'versionNumber': mock.ANY},
+            updates={
+                'versionNumber': mock.ANY,
+                'hostIdentifier': 'host-ident',
+            },
         )
         bridge.we_own_lock.assert_called_with(version)
 
